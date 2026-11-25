@@ -77,5 +77,28 @@ npm run dev
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
 
+## 财务对账交接（数据导出）
+
+数据导出的“执行”不再只有预览和字节数：受理一张对账交接单后，
+可以领取一份可下载、可追溯的对账明细，每一笔都追到已确认的取数批次。
+
+| 接口 | 用途 |
+| --- | --- |
+| `GET /api/data_export/handover/query-results?query_id=` | 指标查询把可用结果交给数据导出 |
+| `POST /api/data_export/handover` | 登记受理单并发起交接（`fields` 选交接字段，`stop_after` 写到地区后停住） |
+| `POST /api/data_export/handover/{no}/corrections` | 更正某地区金额，生成新版本并标注原版本接续/撤销 |
+| `POST /api/data_export/handover/{no}/claim` | 交接件完整后领取，签发回执 |
+| `GET /api/data_export/handover/{no}/detail.csv?task_id=` | 下载对账明细文件（与回执同批数据） |
+| `GET /api/data_export/handover/{no}/receipt?task_id=` | 受理回执，含逐行取数批次 |
+| `GET /api/data_export/handover/{no}/reconciliation?task_id=` | 对账结论：用了哪几次取数、原单接续或撤销、是否需另发单 |
+
+规则：
+
+- 发起时只选中的字段才会写进明细文件、行级追溯和回执；渠道等未选字段不随附件给出。
+- 交接件完整后才允许领取；明细文件在领取后签发，与回执使用同一批已确认取数。
+- 同一张受理单重复发起、重复领取都只返回同一份有效交接，不会复制。
+- 更正生成新版本：原版本已写内容被接续记“接续完成”，已写地区被重新取数替换记“已撤销”；
+  财务仍可从原受理单查看原版本去向，判断是否需要另发受理单。
+
 领域：数据工程
 子方向：数据分析与数据应用

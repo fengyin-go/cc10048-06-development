@@ -24,7 +24,14 @@ class DataExportService(BaseModuleService):
     NEGATIVE_ACTIONS = []
 
     def execute_export(self, task_id: int) -> dict[str, Any]:
-        """执行数据导出，生成模拟文件内容。"""
+        """执行数据导出。
+
+        除了原有的预览与字节数，这里把财务对账交接一并返回：
+        已受理的交接会给出可下载明细、批次血缘和领取状态，
+        让导出执行不再只有“预览 + 字节数”。
+        """
+        from app.services.handover import handover_repo
+
         task = store.find(self.MODULE, task_id)
         if not task:
             return {"error": f"导出任务 {task_id} 不存在"}
@@ -55,6 +62,64 @@ class DataExportService(BaseModuleService):
         update = store.find(self.MODULE, task_id)
         if update:
             update["文件大小"] = f"{len(content.encode('utf-8')) / 1024:.1f}KB"
+
+        handovers = []
+        for current in handover_repo.list_orders(task_id)["items"]:
+            entry = {
+                "acceptance_no": current["acceptance_no"],
+                "handover_no": current["handover_no"],
+                "version": current["version"],
+                "status": current["status"],
+                "complete": current["complete"],
+                "claimable": current["claimable"],
+                "claimed": current["claimed"],
+                "fields": current["fields"],
+                "receipt_no": current["receipt_no"],
+                "detail_url": (
+                    f"/api/data_export/handover/{current['acceptance_no']}/detail.csv"
+                    f"?task_id={task_id}"
+                ),
+            }
+            if current["complete"]:
+                detail = handover_repo.detail(task_id, current["acceptance_no"])
+                entry["detail_filename"] = detail["filename"]
+                entry["detail_sha256"] = detail["headers"]["X-Detail-SHA256"]
+                entry["fetch_batches"] = detail["batch_ids"]
+                entry["file_size_kb"] = round(len(detail["content"]) / 1024, 2)
+            handovers.append(entry)
+
+        if handovers:
+            latest = handovers[-1]
+            if update:
+                # 任务状态跟随交接：只有领取后的交接才算导出完成。
+                if latest["claimed"]:
+                    update["文件大小"] = f"{latest['file_size_kb']:.1f}KB"
+                    update["完成时间"] = datetime.now().isoformat()
+                    update["导出状态"] = "已完成"
+                    update["status"] = "已完成"
+                    update["pending"] = False
+                else:
+                    update["导出状态"] = "导出中"
+                    update["status"] = "导出中"
+                    update["pending"] = True
+            return {
+                "task_id": task_id,
+                "task_name": task.get("任务标识"),
+                "format": fmt,
+                "rows_exported": n_rows,
+                "file_size_kb": round(len(content.encode("utf-8")) / 1024, 2),
+                "preview": data[:5],
+                "handover": latest,
+                "handovers": handovers,
+                "detail_available": latest["complete"],
+                "message": (
+                    "已生成可交接的对账明细，可按受理凭据领取"
+                    if latest["complete"]
+                    else "交接件仍在写入，完整后方可领取"
+                ),
+            }
+
+        if update:
             update["导出状态"] = "已完成"
             update["完成时间"] = datetime.now().isoformat()
             update["status"] = "已完成"
@@ -66,6 +131,10 @@ class DataExportService(BaseModuleService):
             "rows_exported": n_rows,
             "file_size_kb": round(len(content.encode("utf-8")) / 1024, 2),
             "preview": data[:5],
+            "handover": None,
+            "handovers": [],
+            "detail_available": False,
+            "message": "尚未受理对账交接，当前只有预览；可先登记受理单再领取明细",
         }
 
     def domain_enrich(self, config_id: int) -> dict:

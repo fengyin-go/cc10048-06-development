@@ -70,3 +70,27 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .analysis-chart { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 12px 0; }
 .analysis-bar { flex: 1; border-radius: 4px 4px 0 0; background: var(--brand); min-width: 24px; position: relative; transition: height 0.4s; }
 .analysis-bar span { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--muted); white-space: nowrap; }
+/* 财务对账交接 */
+.handover { margin: 20px 0 8px; padding: 16px; background: #fff; border: 1px solid var(--border); border-radius: 8px; }
+.handover-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.handover-head h3 { margin: 0 0 4px; font-size: 15px; }
+.handover-task { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.handover-table input[type='number'], .handover-inline-input { width: 96px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; }
+.handover-inline-input { margin-right: 6px; }
+.field-picks { display: flex; gap: 10px; }
+.field-pick { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #1f2937; }
+.handover-actions { align-items: center; margin: 12px 0; }
+.handover-message { color: var(--muted); font-size: 12px; }
+.handover-card { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.handover-card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.handover-chip { display: inline-block; margin: 0 8px; padding: 2px 8px; border-radius: 10px; background: #eef2ff; color: #1f6feb; font-size: 12px; }
+.handover-chip[data-status='已领取'] { background: #ecfdf3; color: #15803d; }
+.handover-chip[data-status='写入中'] { background: #fff7ed; color: #b45309; }
+.handover-chip[data-status='接续完成'] { background: #eff6ff; color: #1d4ed8; }
+.handover-chip[data-status='已撤销'] { background: #fef2f2; color: #b42318; }
+.handover-muted { color: var(--muted); font-size: 12px; }
+.handover-versions { margin-top: 10px; }
+.handover-receipt, .handover-recon { margin-top: 14px; padding: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; }
+.handover-receipt h4, .handover-recon h4 { margin: 0 0 6px; font-size: 14px; }
+.handover-recon p { margin: 4px 0; font-size: 13px; }
+.handover-list { margin-top: 16px; }
